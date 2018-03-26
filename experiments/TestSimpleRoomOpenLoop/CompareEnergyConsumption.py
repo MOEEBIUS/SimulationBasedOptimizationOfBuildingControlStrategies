@@ -34,6 +34,8 @@ keepEnergySLSQP = []
 keepComfortSLSQP = []
 keepEnergyGA = []
 keepComfortGA = []
+keepEnergyGPSS = []
+keepComfortGPSS = []
 
 # Load results
 baseResultsFolder = 'Results/Energy/'
@@ -60,6 +62,13 @@ for ii in range(1, days):
     keepEnergyGA.append(EnergyGA[-1])
     keepComfortGA.append(ComfortGA[-1])
     
+    # GPSS Results
+    filename=baseResultsFolder + 'GPSSworkspace' + str(ii + 1) + '.out'
+    with open(filename, 'rb') as f:
+        policyGPSS, EnergyGPSS, ComfortGPSS, buildingGPSS = pickle.load(f)
+    keepEnergyGPSS.append(EnergyGPSS[-1])
+    keepComfortGPSS.append(ComfortGPSS[-1])
+    
 
 # Plot and log, Comfort Comparison
 saveResultsFolder = 'Results/Comparisons/'
@@ -68,7 +77,8 @@ ax = plt.subplot(111)
 ax.plot(keepComfortRB, label='Comfort, RB')
 ax.plot(keepComfortSLSQP, label='Comfort, SLSQP')
 ax.plot(keepComfortGA, label='Comfort, NSGA2')
-plt.title('Comfort Comparison of RB, SLSQP and GA under Energy Minimization Objective')
+ax.plot(keepComfortGPSS, label='Comfort, GP_SS')
+plt.title('Comfort Comparison of RB, SLSQP, GA and GP_SS under Energy Minimization Objective')
 ax.legend(loc="upper left", bbox_to_anchor=(1,1))
 plt.show(fig)
 art = []
@@ -84,7 +94,8 @@ ax = plt.subplot(111)
 ax.plot(keepEnergyRB, label='Consumption, RB')
 ax.plot(keepEnergySLSQP, label='Consumption, SLSQP')
 ax.plot(keepEnergyGA, label='Consumption, NSGA2')
-plt.title('Consumption Comparison of RB, SLSQP and GA under Energy Minimization Objective')
+ax.plot(keepEnergyGPSS, label='Consumption, GP_SS')
+plt.title('Consumption Comparison of RB, SLSQP, GA and GP_SS under Energy Minimization Objective')
 ax.legend(loc="upper left", bbox_to_anchor=(1,1))
 plt.show(fig)
 art = []

@@ -34,6 +34,8 @@ keepCostSLSQP = []
 keepComfortSLSQP = []
 keepCostGA = []
 keepComfortGA = []
+keepCostGPSS = []
+keepComfortGPSS = []
 
 # Load results
 baseResultsFolder = 'Results/Bill/'
@@ -60,6 +62,13 @@ for ii in range(0, days):
     keepCostGA.append(CostGA[-1])
     keepComfortGA.append(ComfortGA[-1])
     
+    # GPSS Results
+    filename=baseResultsFolder + 'GPSSworkspace' + str(ii + 1) + '.out'
+    with open(filename, 'rb') as f:
+        policyGPSS, CostGPSS, ComfortGPSS, buildingGPSS = pickle.load(f)
+    keepCostGPSS.append(CostGPSS[-1])
+    keepComfortGPSS.append(ComfortGPSS[-1])
+    
 
 # Plot and log, Comfort Comparison
 saveResultsFolder = 'Results/Comparisons/'
@@ -68,7 +77,8 @@ ax = plt.subplot(111)
 ax.plot(keepComfortRB, label='Comfort, RB')
 ax.plot(keepComfortSLSQP, label='Comfort, SLSQP')
 ax.plot(keepComfortGA, label='Comfort, NSGA2')
-plt.title('Comfort Comparison of RB, SLSQP and GA under Cost Minimization Objective')
+ax.plot(keepComfortGPSS, label='Comfort, GP_SS')
+plt.title('Comfort Comparison of RB, SLSQP, GA and GP_SS under Cost Minimization Objective')
 ax.legend(loc="upper left", bbox_to_anchor=(1,1))
 plt.show(fig)
 art = []
@@ -84,7 +94,8 @@ ax = plt.subplot(111)
 ax.plot(keepCostRB, label='Monetary Cost, RB')
 ax.plot(keepCostSLSQP, label='Monetary Cost, SLSQP')
 ax.plot(keepCostGA, label='Monetary Cost, NSGA2')
-plt.title('Monetary Cost Comparison of RB, SLSQP and GA under Cost Minimization Objective')
+ax.plot(keepCostGPSS, label='Monetary Cost, GP_SS')
+plt.title('Monetary Cost Comparison of RB, SLSQP, GA and GP_SS under Cost Minimization Objective')
 ax.legend(loc="upper left", bbox_to_anchor=(1,1))
 plt.show(fig)
 art = []

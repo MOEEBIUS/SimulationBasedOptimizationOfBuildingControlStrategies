@@ -127,9 +127,11 @@ class SimpleRoomOpenLoop(Building):
         xx = np.zeros((self.T + 1, len(self.states) + 1))
         uu = np.zeros((self.T + 1, len(self.actions)))
         cc = np.zeros((self.T + 1, 1))
+        cf = np.zeros((self.T + 1, 1))
         xx[0,] = [17, self.w[0,]]
         uu[0,] = self.controller(self.policy, xx[0,], 0)
         cc[0,] = self.comfortConstraints(xx[0, self.states], 0)
+        cf[0,] = self.costFunction(uu[0,], 0)
         
         # Simulation
         for ii in range(1, self.T + 1):
@@ -137,30 +139,44 @@ class SimpleRoomOpenLoop(Building):
             xx[ii,1] = self.w[ii,]
             uu[ii,] = self.controller(self.policy, xx[ii,], ii)
             cc[ii,] = self.comfortConstraints(xx[ii, self.states], ii)
+            cf[ii,] = self.costFunction(uu[ii,], ii)
     
     
         # Gather states
         x = np.concatenate((xx, uu), axis=1)
-       
-        # Gather cost, constraints
-        energy = uu.copy()
-        energy = 3 * energy
-        
-        bill = uu.copy()
-        for ii in range(0, uu.shape[0]):
-            if(ii < 6):
-                bill[ii, 0] = 5 * bill[ii, 0]
-            else:
-                bill[ii, 0] = 15 * bill[ii, 0]
  
 #        print("Total Energy Consumption = " + str(np.sum(energy)))
 #        print("Total Monetary Cost = " + str(np.sum(bill)))
 #        print("Comfort Constraint = " + str(np.sum(cc)))
 #        print("---------------------------------------------")
         
-        # Return here either energy either bill, depending on Use Case
-        return x, energy, cc
         
+        return x, cf, cc
+        
+    
+    def costFunction(self, u, timeStep):
+        """Calculate the cost function (i.e. Energy Consumption or Monetary Cost).
+        Args:
+            u (numpy array): Action vector at current time-step.
+            timeStep (float): The current time-step index
+
+        Returns:
+            cost (float): Energy Consumption or Monetary Cost per time-step
+        """
+        
+        # In this simple model, the energy consumption is proportional to
+        # the action value
+        energy = 3 * u
+        
+        # Implements a very simple tarif scheme
+        bill = u
+        if(timeStep < 6):       # 6 a.m.
+            bill = 5 * bill
+        else:
+            bill = 15 * bill
+        
+        # Return here either energy either bill, depending on Use Case
+        return bill #bill
     
     def comfortConstraints(self, x, timeStep):
         """Calculate the thermal comfort constraints in each simulation time-step.

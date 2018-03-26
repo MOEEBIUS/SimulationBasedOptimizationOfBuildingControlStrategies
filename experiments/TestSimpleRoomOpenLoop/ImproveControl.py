@@ -26,7 +26,7 @@ from pylab import *
 import numpy as np
 
 from SimpleRoomOpenLoop.SimpleRoomOpenLoop import SimpleRoomOpenLoop
-from Algorithms import SLSQP_pyOpt, NSGA2_pyOpt
+from Algorithms import SLSQP_pyOpt, NSGA2_pyOpt, GP_SS
 
 
 
@@ -75,11 +75,12 @@ def logResults(baseFolder, prefix, building, policy, costFunction, keepCost, kee
 """ Main program """
 # Choose which optimizers to test
 flagSLSQP = 1
-flagNSGA2 = 1
+flagNSGA2 = 0
 flagRB = 1
+flagGPSS = 1
 
 # Define a folder for storing the results
-costFunction = 0 # 0: minEnergy; 1: Tariff;
+costFunction = 1 # 0: minEnergy; 1: Tariff;
 if(costFunction == 0):
     baseFolder = 'Results/Energy/'
 elif(costFunction == 1):
@@ -89,7 +90,7 @@ elif(costFunction == 1):
 building = SimpleRoomOpenLoop()
 
 # Extract the Rule-Based (Baseline) policy of the building
-policyRB = building.policy
+policyRB = building.policy.copy()
 
 # Optimization results
 keepCostRB = []
@@ -98,6 +99,8 @@ keepCostSLSQP = []
 keepComfortSLSQP = []
 keepCostNSGA2 = []
 keepComfortNSGA2 = []
+keepCostGPSS = []
+keepComfortGPSS = []
 
 # Loop for 10 sample days
 for ii in range(10):
@@ -115,18 +118,28 @@ for ii in range(10):
     building.w = w.copy()
 
     if(flagSLSQP == 1):
+        building.policy = policyRB.copy()
         # Setup and configure the SLSQP Optimizer for the defined building
         optimizerSLSQP = SLSQP_pyOpt()
-        ppSLSQP = optimizerSLSQP.configure(building)
+        optimizerSLSQP.configure(building)
         options = {'ACC': 1.0e-20, 'MAXIT': 2000, 'IPRINT': 1}
         resSLSQP = optimizerSLSQP.optimize(options)
 
     if(flagNSGA2 == 1):
+        building.policy = policyRB.copy()
         # Setup and configure the NSGA2 Optimizer for the defined building
         optimizerNSGA2 = NSGA2_pyOpt()
-        ppNSGA2 = optimizerNSGA2.configure(building)
+        optimizerNSGA2.configure(building)
         options = {'PopSize': 360, 'maxGen': 2000, 'PrintOut' :2}
         resNSGA2 = optimizerNSGA2.optimize(options)
+        
+    if(flagGPSS == 1):
+        building.policy = policyRB.copy()
+        # Setup and configure the GP_SS methodology for the defined building
+        gpSS = GP_SS()
+        gpSS.configure(building)
+        options = {'MAXIT': 2}
+        resGPSS = gpSS.optimize(options)
 
     
     # Logging and plotting data
@@ -153,7 +166,6 @@ for ii in range(10):
             pickle.dump([policyRB, keepCostRB, keepComfortRB, building], f)
         
     if(flagSLSQP == 1):
-        
         print("--------------------------------------------------")
         pSLSQP = optimizerSLSQP.wrapSimulation(resSLSQP)
         print("Performance of the SLSQP controller: " + str(pSLSQP))
@@ -180,6 +192,20 @@ for ii in range(10):
         # Saving the objects:
         with open(filename, 'wb') as f:
             pickle.dump([resNSGA2, keepCostNSGA2, keepComfortNSGA2, building], f)
+            
+    if(flagGPSS == 1):
+        print("--------------------------------------------------")
+        pGPSS = gpSS.wrapSimulation(resGPSS)
+        print("Performance of the GP_SS designed controller: " + str(pGPSS))
+        xx, cf, cc = logResults(baseFolder, 'GPSS', building, resGPSS, costFunction, keepCostGPSS, keepComfortGPSS)
+        keepCostGPSS.append(np.sum(cf))
+        keepComfortGPSS.append(np.sum(cc))
+        
+        # Save all variables to a file 
+        filename= baseFolder + 'GPSS' + 'workspace' + str(ii + 1) + '.out'
+        # Saving the objects:
+        with open(filename, 'wb') as f:
+            pickle.dump([resGPSS, keepCostGPSS, keepComfortGPSS, building], f)
         
         
     elapsed = (time.time() - t0)
